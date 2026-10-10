@@ -1,3 +1,9 @@
+/**
+ * @OnlyCurrentDoc
+ * Limits this script's permission to the one spreadsheet it's attached to,
+ * instead of every spreadsheet in your Google account.
+ */
+
 // Google Apps Script for Workout Tracker sync.
 // Paste this into Extensions → Apps Script on your Google Sheet, run setupSyncKey once, then deploy
 // it as a web app (Execute as: Me, Who has access: Anyone). See the README for step-by-step instructions.

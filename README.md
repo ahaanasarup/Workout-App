@@ -24,7 +24,7 @@ The app can add every finished workout to a Google Sheet. A small Google Apps Sc
 
 1. Create a new Google Sheet (any name).
 2. In the sheet, open **Extensions → Apps Script**. Delete what's there and paste in everything from [`google-apps-script/Code.gs`](google-apps-script/Code.gs). Click **Save**.
-3. **Create your sync key:** in the toolbar's function menu, choose `setupSyncKey` and click **Run**. Approve the permissions when asked. Google will warn that the app isn't verified, because you wrote it yourself. Click **Advanced → Go to (project name)** and then **Allow**. The Execution log at the bottom then shows `Your sync key: …`. Copy that key.
+3. **Create your sync key:** in the toolbar's function menu, choose `setupSyncKey` and click **Run**. Approve the permissions when asked. Google will warn that the app isn't verified, because you wrote it yourself. Click **Advanced → Go to (project name)** and then **Allow**. The permission it asks for only covers this one spreadsheet (the script starts with `@OnlyCurrentDoc`). If it asks for access to *all* your spreadsheets, the first lines of the script didn't get pasted. The Execution log at the bottom then shows `Your sync key: …`. Copy that key.
 4. Click **Deploy → New deployment**. Click the gear next to "Select type" and pick **Web app**.
    - **Execute as:** Me
    - **Who has access:** Anyone
