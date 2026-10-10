@@ -707,7 +707,6 @@
   }
   function pad(n){ return n < 10 ? '0' + n : '' + n; }
   function ymd(d){ return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-  function hm(d){ return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
 
   // Entries logged within a few seconds of each other belong to the same workout.
   function buildSessions(){
@@ -781,17 +780,17 @@
       var name = m ? m.ex.name : it.exId;
       if (it.e.sets) {
         it.e.sets.forEach(function(st, i){
-          rows.push([ymd(d), hm(d), s.day || '', title, name, 'weight', i + 1, st.weight, st.reps, '']);
+          rows.push([ymd(d), s.day || '', title, name, 'weight', i + 1, st.weight, st.reps, '']);
         });
       } else {
-        rows.push([ymd(d), hm(d), s.day || '', title, name, 'cardio', '', '', '', it.e.minutes]);
+        rows.push([ymd(d), s.day || '', title, name, 'cardio', '', '', '', it.e.minutes]);
       }
     });
     return rows;
   }
 
   function buildCsv(){
-    var rows = [['Date', 'Time', 'Day', 'Workout', 'Exercise', 'Type', 'Set', 'Weight (kg)', 'Reps', 'Minutes']];
+    var rows = [['Date', 'Day', 'Workout', 'Exercise', 'Type', 'Set', 'Weight (kg)', 'Reps', 'Minutes']];
     buildSessions().forEach(function(s){ rows = rows.concat(sessionRows(s)); });
     return '\uFEFF' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
   }
@@ -915,13 +914,12 @@
     if (key === null) return;
     key = key.trim();
     if (!key) { alert('A Sync Key Is Required So Only Your Phone Can Write To The Sheet.'); return; }
-    var first = !sync.url;
     sync.url = url;
     sync.key = key;
     sync.keyRejected = false;
     saveSync();
     var past = buildSessions();
-    if (first && past.length && confirm('Also Send Your ' + past.length + ' Past ' + (past.length === 1 ? 'Workout' : 'Workouts') + ' To The Sheet?')) {
+    if (past.length && confirm('Send All ' + past.length + ' Past ' + (past.length === 1 ? 'Workout' : 'Workouts') + ' To The Sheet? Any Already There Are Skipped.')) {
       queueForSync(past);
     } else {
       showToast('Google Sheet Connected');

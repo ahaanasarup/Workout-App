@@ -12,7 +12,7 @@
 // not in the code, so it never ends up in the repository.
 
 const SHEET_NAME = 'Workouts';
-const HEADERS = ['Session ID', 'Date', 'Time', 'Day', 'Workout', 'Exercise', 'Type', 'Set', 'Weight (kg)', 'Reps', 'Minutes'];
+const HEADERS = ['Session ID', 'Date', 'Day', 'Workout', 'Exercise', 'Type', 'Set', 'Weight (kg)', 'Reps', 'Minutes'];
 
 // Run this once from the Apps Script editor (select it in the toolbar and click Run).
 // It creates a random key and prints it in the Execution log; paste that key into the app.
