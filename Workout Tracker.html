@@ -108,6 +108,7 @@
     border: 1px solid var(--line);
     color: var(--text-dim);
     background: var(--surface);
+    cursor: pointer;
   }
   .rot-pill.active {
     background: var(--tape);
@@ -129,30 +130,6 @@
     font-size: 30px;
     line-height: 1.05;
     margin: 0 0 8px;
-  }
-  .hero-meta { font-size: 13px; color: var(--text-dim); }
-
-  .picker {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 18px;
-  }
-  .picker button {
-    flex: 1;
-    padding: 10px 6px;
-    border-radius: var(--radius-s);
-    border: 1px solid var(--line);
-    background: var(--surface);
-    color: var(--text-dim);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-  }
-  .picker button.sel {
-    border-color: var(--tape);
-    color: var(--text);
-    background: var(--surface-raised);
   }
 
   .section-label {
@@ -346,28 +323,25 @@
 
   <div class="topbar">
     <div class="brand">WORKOUT <span>TRACKER</span></div>
-    <div class="streak">🔥 <b id="streakCount">0</b> workouts logged</div>
+    <div class="streak">🔥 <b id="streakCount">0</b> Workouts Logged</div>
   </div>
 
   <div id="mainView">
   <div class="rotation-row" id="rotRow"></div>
 
   <div class="hero">
-    <div class="hero-label" id="heroLabel">Today's session</div>
+    <div class="hero-label" id="heroLabel">Today's Session</div>
     <div class="hero-title" id="heroTitle">Lower Body + Core</div>
-    <div class="hero-meta" id="heroMeta">5 exercises · ~35 min</div>
   </div>
-
-  <div class="picker" id="dayPicker"></div>
 
   <div id="exList"></div>
 
-  <button class="finish-btn" id="finishBtn">Finish workout</button>
+  <button class="finish-btn" id="finishBtn">Finish Workout</button>
   <div class="tool-row">
     <button class="tool-btn" id="historyBtn">History</button>
     <button class="tool-btn exportBtn">Export CSV</button>
   </div>
-  <span class="reset-link" id="resetLink">Reset all logged data</span>
+  <span class="reset-link" id="resetLink">Reset All Logged Data</span>
   </div>
 
   <div id="historyView" hidden>
@@ -390,38 +364,38 @@
       title: "Lower Body + Core",
       sub: "Day A",
       exercises: [
-        { id:'a1', name:'Elliptical warm-up', type:'cardio', sets:1, note:'5 min, easy pace.' },
-        { id:'a2', name:'Instinct Squat', type:'weight', sets:3, reps:10, note:'Nautilus Instinct cable station.' },
-        { id:'a3', name:'Instinct Hip Glute Press', type:'weight', sets:3, reps:10, note:'Per side.' },
-        { id:'a4', name:'Leg Extension', type:'weight', sets:2, reps:12, note:'Technogym machine.' },
-        { id:'a5', name:'Leg Curl', type:'weight', sets:2, reps:12, note:'Technogym machine.' },
-        { id:'a6', name:'Core Crunch machine', type:'weight', sets:2, reps:15, note:'' },
-        { id:'a7', name:'Rower finisher', type:'cardio', sets:1, note:'10 min steady pace, Hydrow.' }
+        { id:'a1', name:'Elliptical Warm-Up', type:'cardio', sets:1, note:'10 Min, Easy Pace.' },
+        { id:'a2', name:'Instinct Squat', type:'weight', sets:3, reps:10, note:'Nautilus Instinct Cable Station.' },
+        { id:'a3', name:'Instinct Hip Glute Press', type:'weight', sets:3, reps:10, note:'Per Side.' },
+        { id:'a4', name:'Leg Extension', type:'weight', sets:2, reps:12, note:'Technogym Machine.' },
+        { id:'a5', name:'Leg Curl', type:'weight', sets:2, reps:12, note:'Technogym Machine.' },
+        { id:'a6', name:'Core Crunch Machine', type:'weight', sets:2, reps:15, note:'' },
+        { id:'a7', name:'Rower Finisher', type:'cardio', sets:1, note:'10 Min Steady Pace, Hydrow.' }
       ]
     },
     B: {
       title: "Upper Push",
       sub: "Day B",
       exercises: [
-        { id:'b1', name:'Elliptical warm-up', type:'cardio', sets:1, note:'5 min, easy pace.' },
+        { id:'b1', name:'Elliptical Warm-Up', type:'cardio', sets:1, note:'10 Min, Easy Pace.' },
         { id:'b2', name:'Technogym Chest Press', type:'weight', sets:3, reps:10, note:'' },
         { id:'b3', name:'Technogym Overhead Press', type:'weight', sets:3, reps:10, note:'' },
         { id:'b4', name:'Instinct Push Down', type:'weight', sets:2, reps:12, note:'' },
-        { id:'b5', name:'DB Shoulder Raises', type:'weight', sets:2, reps:12, note:'Light dumbbells, 5–8 lb.' },
-        { id:'b6', name:'Rower finisher', type:'cardio', sets:1, note:'10 min steady pace.' }
+        { id:'b5', name:'DB Shoulder Raises', type:'weight', sets:2, reps:12, note:'Light Dumbbells, 5–8 Lb.' },
+        { id:'b6', name:'Rower Finisher', type:'cardio', sets:1, note:'10 Min Steady Pace.' }
       ]
     },
     C: {
       title: "Upper Pull + Core",
       sub: "Day C",
       exercises: [
-        { id:'c1', name:'Elliptical warm-up', type:'cardio', sets:1, note:'5 min, easy pace.' },
+        { id:'c1', name:'Elliptical Warm-Up', type:'cardio', sets:1, note:'10 Min, Easy Pace.' },
         { id:'c2', name:'Instinct Pulldown', type:'weight', sets:3, reps:10, note:'' },
         { id:'c3', name:'Instinct High Row', type:'weight', sets:3, reps:10, note:'' },
         { id:'c4', name:'Instinct Biceps Curl', type:'weight', sets:2, reps:12, note:'' },
-        { id:'c5', name:'Instinct Torso Twist', type:'weight', sets:2, reps:12, note:'Per side.' },
+        { id:'c5', name:'Instinct Torso Twist', type:'weight', sets:2, reps:12, note:'Per Side.' },
         { id:'c6', name:'Ab Crunch (Instinct)', type:'weight', sets:2, reps:15, note:'' },
-        { id:'c7', name:'Interval finisher', type:'cardio', sets:1, note:'10 min, 1 min hard / 1 min easy — elliptical or rower.' }
+        { id:'c7', name:'Rowing Interval Finisher', type:'cardio', sets:1, note:'10 Min On The Rower, 1 Min Hard / 1 Min Easy.' }
       ]
     }
   };
@@ -449,10 +423,8 @@
   }
 
   var rotRow = document.getElementById('rotRow');
-  var dayPicker = document.getElementById('dayPicker');
   var exList = document.getElementById('exList');
   var heroTitle = document.getElementById('heroTitle');
-  var heroMeta = document.getElementById('heroMeta');
   var streakCount = document.getElementById('streakCount');
   var finishBtn = document.getElementById('finishBtn');
   var toast = document.getElementById('toast');
@@ -465,26 +437,16 @@
 
   function renderRotation(){
     rotRow.innerHTML = '';
-    ORDER.forEach(function(k, i){
-      var pill = document.createElement('div');
-      pill.className = 'rot-pill' + (i === state.rotationIndex % 3 ? ' active' : '');
-      pill.textContent = 'Day ' + k;
-      rotRow.appendChild(pill);
-    });
-  }
-
-  function renderPicker(){
-    dayPicker.innerHTML = '';
     ORDER.forEach(function(k){
-      var btn = document.createElement('button');
-      btn.textContent = WORKOUTS[k].sub + ' · ' + WORKOUTS[k].title.split(' ')[0];
-      btn.className = state.selectedDay === k ? 'sel' : '';
-      btn.onclick = function(){
+      var pill = document.createElement('button');
+      pill.className = 'rot-pill' + (state.selectedDay === k ? ' active' : '');
+      pill.textContent = 'Day ' + k;
+      pill.onclick = function(){
         state.selectedDay = k;
         saveState();
         renderAll();
       };
-      dayPicker.appendChild(btn);
+      rotRow.appendChild(pill);
     });
   }
 
@@ -496,7 +458,6 @@
   function renderHero(){
     var w = WORKOUTS[state.selectedDay];
     heroTitle.textContent = w.title;
-    heroMeta.textContent = w.exercises.length + ' exercises · ~35 min';
     streakCount.textContent = state.completedCount;
   }
 
@@ -505,7 +466,7 @@
     if (!log || !log.length) return null;
     var last = log[log.length - 1];
     return last.sets.map(function(s){
-      return s.weight ? (s.weight + ' kg × ' + (s.reps || '?')) : (s.reps ? s.reps + ' reps' : '');
+      return s.weight ? (s.weight + ' kg × ' + (s.reps || '?')) : (s.reps ? s.reps + ' Reps' : '');
     }).filter(Boolean).join(', ');
   }
 
@@ -513,7 +474,7 @@
     var log = state.logs[exId];
     if (!log || !log.length) return null;
     var last = log[log.length - 1];
-    return last.minutes ? (last.minutes + ' min') : null;
+    return last.minutes ? (last.minutes + ' Min') : null;
   }
 
   function renderExercises(){
@@ -550,8 +511,8 @@
       var sub = document.createElement('div');
       sub.className = 'ex-sub';
       sub.textContent = ex.type === 'cardio'
-        ? (prog[ex.id] && prog[ex.id].minutes ? prog[ex.id].minutes + ' min logged' : 'Tap to log time')
-        : (ex.sets + ' sets × ' + ex.reps + ' reps');
+        ? (prog[ex.id] && prog[ex.id].minutes ? prog[ex.id].minutes + ' Min Logged' : 'Tap To Log Time')
+        : (ex.sets + ' Sets × ' + ex.reps + ' Reps');
       nameWrap.appendChild(name);
       nameWrap.appendChild(sub);
 
@@ -574,12 +535,12 @@
         if (lastText) {
           var lt = document.createElement('div');
           lt.className = 'last-time';
-          lt.textContent = 'Last time: ' + lastText;
+          lt.textContent = 'Last Time: ' + lastText;
           body.appendChild(lt);
         } else {
           var lt2 = document.createElement('div');
           lt2.className = 'last-time';
-          lt2.textContent = 'No history yet — log your first set below.';
+          lt2.textContent = 'No History Yet — Log Your First Set Below.';
           body.appendChild(lt2);
         }
 
@@ -604,7 +565,7 @@
               var rInput = document.createElement('input');
               rInput.type = 'number';
               rInput.inputMode = 'numeric';
-              rInput.placeholder = 'reps';
+              rInput.placeholder = 'Reps';
               rInput.value = (existing[i] && existing[i].reps) || '';
               var unit = document.createElement('div');
               unit.className = 'unit';
@@ -634,7 +595,7 @@
 
         var addBtn = document.createElement('button');
         addBtn.className = 'add-set';
-        addBtn.textContent = '+ Add set';
+        addBtn.textContent = '+ Add Set';
         addBtn.onclick = function(){
           numSets++;
           renderSetRows();
@@ -648,7 +609,7 @@
         var lastCardio = lastCardioText(ex.id);
         var lc = document.createElement('div');
         lc.className = 'last-time';
-        lc.textContent = lastCardio ? ('Last time: ' + lastCardio) : 'No history yet — log your time below.';
+        lc.textContent = lastCardio ? ('Last Time: ' + lastCardio) : 'No History Yet — Log Your Time Below.';
         body.appendChild(lc);
 
         var cardioRow = document.createElement('div');
@@ -663,7 +624,7 @@
         var mInput = document.createElement('input');
         mInput.type = 'number';
         mInput.inputMode = 'numeric';
-        mInput.placeholder = 'min';
+        mInput.placeholder = 'Min';
         mInput.value = (prog[ex.id] && prog[ex.id].minutes) || '';
         mInput.oninput = function(){
           if (!prog[ex.id]) prog[ex.id] = {};
@@ -723,18 +684,18 @@
     state.progress[ORDER[(state.rotationIndex + 2) % 3]] = {};
 
     saveState();
-    showToast('Workout logged. Next up: Day ' + state.selectedDay);
+    showToast('Workout Logged. Next Up: Day ' + state.selectedDay);
     renderAll();
   }
 
   finishBtn.onclick = finishWorkout;
 
   document.getElementById('resetLink').onclick = function(){
-    if (confirm('Clear all logged workouts and history? This can\'t be undone.')) {
+    if (confirm('Clear All Logged Workouts And History? This Can\'t Be Undone.')) {
       state = { rotationIndex: 0, completedCount: 0, selectedDay: 'A', logs: {}, progress: {} };
       saveState();
       renderAll();
-      showToast('All data cleared');
+      showToast('All Data Cleared');
     }
   };
 
@@ -786,7 +747,7 @@
 
   function fmtSets(sets){
     return (sets || []).map(function(s){
-      return s.weight ? (s.weight + ' kg \u00d7 ' + (s.reps || '?')) : (s.reps ? s.reps + ' reps' : '');
+      return s.weight ? (s.weight + ' kg \u00d7 ' + (s.reps || '?')) : (s.reps ? s.reps + ' Reps' : '');
     }).filter(Boolean).join('  \u00b7  ');
   }
 
@@ -794,7 +755,7 @@
     histList.innerHTML = '';
     var sessions = buildSessions().reverse();
     if (!sessions.length) {
-      histList.appendChild(el('div', 'hist-empty', 'No workouts logged yet. Finish a workout and it will show up here.'));
+      histList.appendChild(el('div', 'hist-empty', 'No Workouts Logged Yet. Finish A Workout And It Will Show Up Here.'));
       return;
     }
     sessions.forEach(function(s){
@@ -808,7 +769,7 @@
         var m = EXMAP[it.exId];
         var row = el('div', 'hist-row');
         row.appendChild(el('div', 'hist-ex', m ? m.ex.name : it.exId));
-        var detail = it.e.sets ? fmtSets(it.e.sets) : (it.e.minutes ? it.e.minutes + ' min' : '');
+        var detail = it.e.sets ? fmtSets(it.e.sets) : (it.e.minutes ? it.e.minutes + ' Min' : '');
         if (detail) row.appendChild(el('div', 'hist-detail', detail));
         card.appendChild(row);
       });
@@ -844,7 +805,7 @@
 
   // Uses the iOS share sheet when available (Save to Files, AirDrop, Mail…), else a plain download.
   async function exportCsv(){
-    if (!buildSessions().length) { showToast('Nothing to export yet'); return; }
+    if (!buildSessions().length) { showToast('Nothing To Export Yet'); return; }
     var filename = 'workout-tracker-' + ymd(new Date()) + '.csv';
     var blob = new Blob([buildCsv()], { type: 'text/csv' });
     try {
@@ -881,7 +842,6 @@
 
   function renderAll(){
     renderRotation();
-    renderPicker();
     renderHero();
     renderExercises();
     if (!historyView.hidden) renderHistory();
