@@ -1,6 +1,6 @@
 {
-  "name": "Three Rounds",
-  "short_name": "3 Rounds",
+  "name": "Workout Tracker",
+  "short_name": "Workout Tracker",
   "start_url": "./Workout%20Tracker.html",
   "display": "standalone",
   "background_color": "#17191b",

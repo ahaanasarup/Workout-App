@@ -1,4 +1,4 @@
-# Three Rounds
+# Workout Tracker
 
 A single-page workout tracker for a three-day A/B/C rotation. It logs sets, reps, weight and cardio time, keeps a history, and exports it to CSV.
 

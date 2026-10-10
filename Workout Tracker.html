@@ -3,11 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Three Rounds</title>
+<title>Workout Tracker</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="3 Rounds">
+<meta name="apple-mobile-web-app-title" content="Workout Tracker">
 <meta name="theme-color" content="#17191b">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.json">
@@ -345,7 +345,7 @@
 <div class="wrap">
 
   <div class="topbar">
-    <div class="brand">THREE <span>ROUNDS</span></div>
+    <div class="brand">WORKOUT <span>TRACKER</span></div>
     <div class="streak">🔥 <b id="streakCount">0</b> workouts logged</div>
   </div>
 
@@ -427,12 +427,14 @@
   };
   var ORDER = ['A','B','C'];
 
-  var STORE_KEY = 'threeRoundsData_v1';
+  var STORE_KEY = 'workoutTrackerData_v1';
+  var LEGACY_STORE_KEY = 'threeRoundsData_v1';
   var state = loadState();
 
   function loadState(){
     try {
-      var raw = localStorage.getItem(STORE_KEY);
+      // Fall back to the key used before the app was renamed so existing logs carry over.
+      var raw = localStorage.getItem(STORE_KEY) || localStorage.getItem(LEGACY_STORE_KEY);
       if (raw) return JSON.parse(raw);
     } catch(e){}
     return { rotationIndex: 0, completedCount: 0, selectedDay: null, logs: {}, progress: {} };
@@ -843,7 +845,7 @@
   // Uses the iOS share sheet when available (Save to Files, AirDrop, Mail…), else a plain download.
   async function exportCsv(){
     if (!buildSessions().length) { showToast('Nothing to export yet'); return; }
-    var filename = 'three-rounds-' + ymd(new Date()) + '.csv';
+    var filename = 'workout-tracker-' + ymd(new Date()) + '.csv';
     var blob = new Blob([buildCsv()], { type: 'text/csv' });
     try {
       var file = new File([blob], filename, { type: 'text/csv' });
