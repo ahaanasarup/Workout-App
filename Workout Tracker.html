@@ -252,16 +252,6 @@
   .finish-btn:active { transform: scale(0.99); }
   .finish-btn.disabled { opacity: 0.4; pointer-events: none; }
 
-  .reset-link {
-    display: block;
-    text-align: center;
-    margin-top: 18px;
-    font-size: 12px;
-    color: var(--text-dim);
-    text-decoration: underline;
-    cursor: pointer;
-  }
-
   .toast {
     position: fixed;
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
@@ -345,7 +335,6 @@
   </div>
   <button class="tool-btn sync-btn" id="syncBtn">Google Sheet Sync</button>
   <div class="sync-status" id="syncStatus"></div>
-  <span class="reset-link" id="resetLink">Reset All Logged Data</span>
   </div>
 
   <div id="historyView" hidden>
@@ -701,15 +690,6 @@
 
   finishBtn.onclick = finishWorkout;
 
-  document.getElementById('resetLink').onclick = function(){
-    if (confirm('Clear All Logged Workouts And History? This Can\'t Be Undone.')) {
-      state = { rotationIndex: 0, completedCount: 0, selectedDay: 'A', logs: {}, progress: {} };
-      saveState();
-      renderAll();
-      showToast('All Data Cleared');
-    }
-  };
-
   // ---------- History + CSV export ----------
   var mainView = document.getElementById('mainView');
   var historyView = document.getElementById('historyView');
@@ -857,7 +837,7 @@
       var raw = localStorage.getItem(SYNC_KEY);
       if (raw) { var o = JSON.parse(raw); o.queue = o.queue || []; return o; }
     } catch(e){}
-    return { url: '', queue: [], lastSync: null };
+    return { url: '', key: '', queue: [], lastSync: null, keyRejected: false };
   }
   function saveSync(){
     try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch(e){}
@@ -865,6 +845,7 @@
   }
   function renderSyncStatus(){
     if (!sync.url) { syncStatus.textContent = 'Not Connected'; return; }
+    if (sync.keyRejected) { syncStatus.textContent = 'Sync Key Rejected. Tap Google Sheet Sync To Fix It'; return; }
     if (sync.queue.length) {
       syncStatus.textContent = sync.queue.length + (sync.queue.length === 1 ? ' Workout' : ' Workouts') + ' Waiting To Sync';
     } else if (sync.lastSync) {
@@ -895,10 +876,18 @@
       while (sync.queue.length) {
         var item = sync.queue[0];
         // text/plain keeps this a "simple" request, so Apps Script doesn't need to answer a CORS preflight.
-        var res = await fetch(sync.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(item) });
+        var payload = { key: sync.key, sessionId: item.sessionId, rows: item.rows };
+        var res = await fetch(sync.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
         var out = await res.json();
+        if (out && out.error === 'Unauthorized') {
+          sync.keyRejected = true;
+          saveSync();
+          if (announce) showToast('Sync Key Rejected');
+          return;
+        }
         if (!out || !out.ok) throw new Error((out && out.error) || 'Sync rejected');
         sync.queue.shift();
+        sync.keyRejected = false;
         sync.lastSync = new Date().toISOString();
         saveSync();
         sent++;
@@ -917,13 +906,19 @@
     var url = prompt('Paste Your Google Apps Script Web App URL (Leave Blank To Disconnect):', sync.url || '');
     if (url === null) return;
     url = url.trim();
-    if (!url) { sync.url = ''; saveSync(); showToast('Google Sheet Disconnected'); return; }
+    if (!url) { sync.url = ''; sync.key = ''; sync.keyRejected = false; saveSync(); showToast('Google Sheet Disconnected'); return; }
     if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) {
       alert('That Doesn\'t Look Like An Apps Script Web App URL. It Should Start With https://script.google.com/ And End With /exec.');
       return;
     }
+    var key = prompt('Paste Your Sync Key (From The setupSyncKey Step In Apps Script):', sync.key || '');
+    if (key === null) return;
+    key = key.trim();
+    if (!key) { alert('A Sync Key Is Required So Only Your Phone Can Write To The Sheet.'); return; }
     var first = !sync.url;
     sync.url = url;
+    sync.key = key;
+    sync.keyRejected = false;
     saveSync();
     var past = buildSessions();
     if (first && past.length && confirm('Also Send Your ' + past.length + ' Past ' + (past.length === 1 ? 'Workout' : 'Workouts') + ' To The Sheet?')) {

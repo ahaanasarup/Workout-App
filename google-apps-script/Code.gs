@@ -1,15 +1,29 @@
 // Google Apps Script for Workout Tracker sync.
-// Paste this into Extensions → Apps Script on your Google Sheet, then deploy it as a web app
-// (Execute as: Me, Who has access: Anyone). See the README for step-by-step instructions.
+// Paste this into Extensions → Apps Script on your Google Sheet, run setupSyncKey once, then deploy
+// it as a web app (Execute as: Me, Who has access: Anyone). See the README for step-by-step instructions.
+//
+// Only requests carrying the sync key are written. The key is kept in this script's properties,
+// not in the code, so it never ends up in the repository.
 
 const SHEET_NAME = 'Workouts';
 const HEADERS = ['Session ID', 'Date', 'Time', 'Day', 'Workout', 'Exercise', 'Type', 'Set', 'Weight (kg)', 'Reps', 'Minutes'];
+
+// Run this once from the Apps Script editor (select it in the toolbar and click Run).
+// It creates a random key and prints it in the Execution log; paste that key into the app.
+// Running it again replaces the key, and the old one stops working.
+function setupSyncKey() {
+  const key = Utilities.getUuid().replace(/-/g, '');
+  PropertiesService.getScriptProperties().setProperty('SYNC_KEY', key);
+  Logger.log('Your sync key: ' + key);
+}
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
   lock.waitLock(10000);
   try {
     const body = JSON.parse(e.postData.contents);
+    const expected = PropertiesService.getScriptProperties().getProperty('SYNC_KEY');
+    if (!expected || body.key !== expected) return json({ ok: false, error: 'Unauthorized' });
     if (!body.sessionId || !Array.isArray(body.rows)) throw new Error('Bad payload');
 
     const ss = SpreadsheetApp.getActiveSpreadsheet();

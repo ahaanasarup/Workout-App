@@ -24,16 +24,18 @@ The app can add every finished workout to a Google Sheet. A small Google Apps Sc
 
 1. Create a new Google Sheet (any name).
 2. In the sheet, open **Extensions → Apps Script**. Delete what's there and paste in everything from [`google-apps-script/Code.gs`](google-apps-script/Code.gs). Click **Save**.
-3. Click **Deploy → New deployment**. Click the gear next to "Select type" and pick **Web app**.
+3. **Create your sync key:** in the toolbar's function menu, choose `setupSyncKey` and click **Run**. Approve the permissions when asked. Google will warn that the app isn't verified, because you wrote it yourself. Click **Advanced → Go to (project name)** and then **Allow**. The Execution log at the bottom then shows `Your sync key: …`. Copy that key.
+4. Click **Deploy → New deployment**. Click the gear next to "Select type" and pick **Web app**.
    - **Execute as:** Me
    - **Who has access:** Anyone
-4. Click **Deploy**, then **Authorize access**. Google will warn that the app isn't verified, because you wrote it yourself. Click **Advanced → Go to (project name)** and then **Allow**.
-5. Copy the **Web app URL**. It starts with `https://script.google.com/` and ends with `/exec`.
-6. In Workout Tracker on your phone, tap **Google Sheet Sync** and paste the URL. It offers to send your past workouts too.
+5. Click **Deploy** and copy the **Web app URL**. It starts with `https://script.google.com/macros/s/` and ends with `/exec`. To find it again later, go to **Deploy → Manage deployments**. Don't use the "Test deployments" URL ending in `/dev`, because it only works while you're signed in to the editor.
+6. In Workout Tracker on your phone, tap **Google Sheet Sync**. Paste the URL, then the sync key. It offers to send your past workouts too.
 
 After that, every time you tap **Finish Workout**, the workout is sent to a **Workouts** tab in the sheet. If you have no signal, it waits on the phone and syncs the next time you open the app with a connection. The line under the sync button shows what's waiting and when the last sync happened.
 
-Keep the web app URL private. Anyone who has it can add rows to that sheet, though they can't read it. The URL is stored only on your phone and is never part of this repository.
+### Who can write to the sheet
+
+The web app has to allow "Anyone", because the phone app can't sign in to Google. Instead, the script rejects any request that doesn't include your sync key, so only your phone can add rows. Nobody can read the sheet through the web app either way. The key lives in the script's properties and on your phone, never in this repository. If you think it has leaked, run `setupSyncKey` again and enter the new key in the app. The old key stops working right away.
 
 If you edit `Code.gs` later, use **Deploy → Manage deployments → Edit → Version: New version** so the URL stays the same.
 
