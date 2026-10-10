@@ -2,13 +2,13 @@
 
 A single-page workout tracker for a three-day A/B/C rotation. It logs sets, reps, weight and cardio time, keeps a history, and exports it to CSV.
 
-Everything is in `index.html`. Workout data is stored in the browser's `localStorage` on the device, and nothing is sent anywhere.
+Everything is in `Workout Tracker.html` (`index.html` just redirects to it). Workout data is stored in the browser's `localStorage` on the device, and nothing is sent anywhere.
 
 ## Installing on an iPhone
 
-iOS won't run the page properly if you open `index.html` straight from the Files app: it shows a preview, not a working web page. Serve it over HTTPS and add it to your Home Screen instead:
+iOS won't run the page properly if you open the HTML file straight from the Files app: it shows a preview, not a working web page. Serve it over HTTPS and add it to your Home Screen instead:
 
-1. Turn on GitHub Pages for this repo (Settings → Pages → Deploy from branch → pick the branch, `/ (root)`).
+1. Turn on GitHub Pages for this repo (Settings → Pages → Deploy from branch → pick `iPhone-Deployment`, `/ (root)`).
 2. On the iPhone, open the Pages URL in **Safari**.
 3. Tap **Share → Add to Home Screen**.
 
@@ -20,4 +20,4 @@ Your data lives on that one phone. Use **Export CSV** now and then, which opens 
 
 ## Customising workouts
 
-Edit the `WORKOUTS` object near the top of the `<script>` in `index.html`.
+Edit the `WORKOUTS` object near the top of the `<script>` in `Workout Tracker.html`.
