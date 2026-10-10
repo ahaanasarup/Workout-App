@@ -281,6 +281,8 @@
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
   .tool-row { display: flex; gap: 8px; margin-top: 18px; }
+  .sync-btn { width: 100%; margin-top: 8px; }
+  .sync-status { font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 8px; min-height: 1em; }
   .tool-btn {
     flex: 1;
     padding: 11px 12px;
@@ -341,6 +343,8 @@
     <button class="tool-btn" id="historyBtn">History</button>
     <button class="tool-btn exportBtn">Export CSV</button>
   </div>
+  <button class="tool-btn sync-btn" id="syncBtn">Google Sheet Sync</button>
+  <div class="sync-status" id="syncStatus"></div>
   <span class="reset-link" id="resetLink">Reset All Logged Data</span>
   </div>
 
@@ -660,6 +664,8 @@
   function finishWorkout(){
     var w = WORKOUTS[state.selectedDay];
     var prog = getProgress(state.selectedDay);
+    var now = new Date();
+    var session = { start: now.getTime(), day: state.selectedDay, items: [] };
 
     // push any logged sets into history
     w.exercises.forEach(function(ex){
@@ -667,12 +673,16 @@
         var filled = prog[ex.id].sets.filter(function(s){ return s.weight || s.reps; });
         if (filled.length) {
           if (!state.logs[ex.id]) state.logs[ex.id] = [];
-          state.logs[ex.id].push({ date: new Date().toISOString(), sets: filled });
+          var entry = { date: now.toISOString(), sets: filled };
+          state.logs[ex.id].push(entry);
+          session.items.push({ exId: ex.id, t: session.start, e: entry });
         }
       }
       if (ex.type === 'cardio' && prog[ex.id] && prog[ex.id].minutes) {
         if (!state.logs[ex.id]) state.logs[ex.id] = [];
-        state.logs[ex.id].push({ date: new Date().toISOString(), minutes: prog[ex.id].minutes });
+        var entry = { date: now.toISOString(), minutes: prog[ex.id].minutes };
+        state.logs[ex.id].push(entry);
+        session.items.push({ exId: ex.id, t: session.start, e: entry });
       }
     });
 
@@ -686,6 +696,7 @@
     saveState();
     showToast('Workout Logged. Next Up: Day ' + state.selectedDay);
     renderAll();
+    if (session.items.length) queueForSync([session]);
   }
 
   finishBtn.onclick = finishWorkout;
@@ -781,23 +792,27 @@
     v = (v === null || v === undefined) ? '' : String(v);
     return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
   }
+  function sessionRows(s){
+    var rows = [];
+    var d = new Date(s.start);
+    var title = s.day ? WORKOUTS[s.day].title : '';
+    s.items.forEach(function(it){
+      var m = EXMAP[it.exId];
+      var name = m ? m.ex.name : it.exId;
+      if (it.e.sets) {
+        it.e.sets.forEach(function(st, i){
+          rows.push([ymd(d), hm(d), s.day || '', title, name, 'weight', i + 1, st.weight, st.reps, '']);
+        });
+      } else {
+        rows.push([ymd(d), hm(d), s.day || '', title, name, 'cardio', '', '', '', it.e.minutes]);
+      }
+    });
+    return rows;
+  }
+
   function buildCsv(){
     var rows = [['Date', 'Time', 'Day', 'Workout', 'Exercise', 'Type', 'Set', 'Weight (kg)', 'Reps', 'Minutes']];
-    buildSessions().forEach(function(s){
-      var d = new Date(s.start);
-      var title = s.day ? WORKOUTS[s.day].title : '';
-      s.items.forEach(function(it){
-        var m = EXMAP[it.exId];
-        var name = m ? m.ex.name : it.exId;
-        if (it.e.sets) {
-          it.e.sets.forEach(function(st, i){
-            rows.push([ymd(d), hm(d), s.day || '', title, name, 'weight', i + 1, st.weight, st.reps, '']);
-          });
-        } else {
-          rows.push([ymd(d), hm(d), s.day || '', title, name, 'cardio', '', '', '', it.e.minutes]);
-        }
-      });
-    });
+    buildSessions().forEach(function(s){ rows = rows.concat(sessionRows(s)); });
     return '\uFEFF' + rows.map(function(r){ return r.map(csvCell).join(','); }).join('\r\n');
   }
 
@@ -827,6 +842,102 @@
     setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
   }
   exportBtns.forEach(function(b){ b.onclick = exportCsv; });
+
+  // ---------- Google Sheet sync ----------
+  // Each finished workout is queued, then POSTed to a Google Apps Script web app that appends
+  // it to the sheet. The queue survives being offline; the script skips session IDs it already has.
+  var SYNC_KEY = 'workoutTrackerSync_v1';
+  var sync = loadSync();
+  var syncing = false;
+  var syncBtn = document.getElementById('syncBtn');
+  var syncStatus = document.getElementById('syncStatus');
+
+  function loadSync(){
+    try {
+      var raw = localStorage.getItem(SYNC_KEY);
+      if (raw) { var o = JSON.parse(raw); o.queue = o.queue || []; return o; }
+    } catch(e){}
+    return { url: '', queue: [], lastSync: null };
+  }
+  function saveSync(){
+    try { localStorage.setItem(SYNC_KEY, JSON.stringify(sync)); } catch(e){}
+    renderSyncStatus();
+  }
+  function renderSyncStatus(){
+    if (!sync.url) { syncStatus.textContent = 'Not Connected'; return; }
+    if (sync.queue.length) {
+      syncStatus.textContent = sync.queue.length + (sync.queue.length === 1 ? ' Workout' : ' Workouts') + ' Waiting To Sync';
+    } else if (sync.lastSync) {
+      var d = new Date(sync.lastSync);
+      syncStatus.textContent = 'Synced ' + d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
+        ', ' + d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    } else {
+      syncStatus.textContent = 'Connected';
+    }
+  }
+
+  function queueForSync(sessions){
+    var queued = {};
+    sync.queue.forEach(function(q){ queued[q.sessionId] = true; });
+    sessions.forEach(function(s){
+      var id = 'ses-' + s.start;
+      if (!queued[id]) sync.queue.push({ sessionId: id, rows: sessionRows(s) });
+    });
+    saveSync();
+    flushSync(true);
+  }
+
+  async function flushSync(announce){
+    if (!sync.url || !sync.queue.length || syncing) return;
+    syncing = true;
+    var sent = 0;
+    try {
+      while (sync.queue.length) {
+        var item = sync.queue[0];
+        // text/plain keeps this a "simple" request, so Apps Script doesn't need to answer a CORS preflight.
+        var res = await fetch(sync.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(item) });
+        var out = await res.json();
+        if (!out || !out.ok) throw new Error((out && out.error) || 'Sync rejected');
+        sync.queue.shift();
+        sync.lastSync = new Date().toISOString();
+        saveSync();
+        sent++;
+      }
+      if (announce && sent) showToast('Synced To Google Sheet');
+    } catch(e){
+      console.error('Sheet sync failed', e);
+      if (announce) showToast('Saved. Will Sync When Online');
+    } finally {
+      syncing = false;
+      renderSyncStatus();
+    }
+  }
+
+  syncBtn.onclick = function(){
+    var url = prompt('Paste Your Google Apps Script Web App URL (Leave Blank To Disconnect):', sync.url || '');
+    if (url === null) return;
+    url = url.trim();
+    if (!url) { sync.url = ''; saveSync(); showToast('Google Sheet Disconnected'); return; }
+    if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) {
+      alert('That Doesn\'t Look Like An Apps Script Web App URL. It Should Start With https://script.google.com/ And End With /exec.');
+      return;
+    }
+    var first = !sync.url;
+    sync.url = url;
+    saveSync();
+    var past = buildSessions();
+    if (first && past.length && confirm('Also Send Your ' + past.length + ' Past ' + (past.length === 1 ? 'Workout' : 'Workouts') + ' To The Sheet?')) {
+      queueForSync(past);
+    } else {
+      showToast('Google Sheet Connected');
+      flushSync(true);
+    }
+  };
+
+  window.addEventListener('online', function(){ flushSync(true); });
+  document.addEventListener('visibilitychange', function(){ if (!document.hidden) flushSync(false); });
+  renderSyncStatus();
+  flushSync(false);
 
   document.getElementById('historyBtn').onclick = function(){
     mainView.hidden = true;
