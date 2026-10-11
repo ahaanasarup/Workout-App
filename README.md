@@ -33,6 +33,24 @@ The app can add every finished workout to a Google Sheet. A small Google Apps Sc
 
 After that, every time you tap **Finish Workout**, the workout is sent to a **Workouts** tab in the sheet. If you have no signal, it waits on the phone and syncs the next time you open the app with a connection. The line under the sync button shows what's waiting and when the last sync happened.
 
+### What gets recorded
+
+Each finished workout adds one row per set for weight exercises, and one row for each cardio exercise, each skipped exercise, and each exercise checked off without numbers. The CSV export uses the same columns, minus Session ID.
+
+| Column | Meaning |
+| --- | --- |
+| Session ID | Unique ID for the workout. The script uses it to avoid duplicates |
+| Date | `YYYY-MM-DD` |
+| Day | A, B or C |
+| Exercise ID | Permanent ID (e.g. `a2`) that stays the same if an exercise is renamed |
+| Exercise | Exercise name |
+| Status | `Done`, or `Skipped` if nothing was logged and it wasn't checked off |
+| Set | Set number (blank for cardio and skipped rows) |
+| Target Sets / Target Reps / Target Minutes | The plan at the time of the workout |
+| Weight (kg) / Reps | What you lifted |
+| RPE | Effort, 1–10 (10 = nothing left) |
+| Minutes / Distance (m) | Cardio |
+
 ### Who can write to the sheet
 
 The web app has to allow "Anyone", because the phone app can't sign in to Google. Instead, the script rejects any request that doesn't include your sync key, so only your phone can add rows. Nobody can read the sheet through the web app either way. The key lives in the script's properties and on your phone, never in this repository. If you think it has leaked, run `setupSyncKey` again and enter the new key in the app. The old key stops working right away.
