@@ -504,7 +504,7 @@
     streakCount.textContent = state.completedCount;
   }
 
-  var RPE_VALUES = [1, 2, 3, 4, 5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
+  var RPE_VALUES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
   function rpeSelect(value, onChange){
     var sel = document.createElement('select');
@@ -512,7 +512,9 @@
     blank.value = '';
     blank.textContent = 'RPE';
     sel.appendChild(blank);
-    RPE_VALUES.forEach(function(v){
+    // A half value entered before the picker went to whole numbers still shows, so it isn't silently dropped.
+    var values = value && RPE_VALUES.indexOf(Number(value)) < 0 ? RPE_VALUES.concat([Number(value)]).sort(function(a, b){ return a - b; }) : RPE_VALUES;
+    values.forEach(function(v){
       var o = document.createElement('option');
       o.value = v;
       o.textContent = v;
