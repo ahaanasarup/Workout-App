@@ -724,16 +724,19 @@
       session.items.push({ exId: ex.id, t: session.start, e: entry });
     });
 
+    // Advance from the day actually finished (it may have been picked by hand), then clear the
+    // checkmarks and entries on both that day and the next one so it starts fresh. Logs are kept.
+    var finishedDay = state.selectedDay;
     state.completedCount += 1;
-    state.rotationIndex = (state.rotationIndex + 1) % 3;
+    state.rotationIndex = (ORDER.indexOf(finishedDay) + 1) % 3;
     state.selectedDay = ORDER[state.rotationIndex];
-    state.progress[Object.keys(WORKOUTS).find(function(k){return true;})]; // noop
-    // clear today's checkmarks/sets for the day just done, keep logs
-    state.progress[ORDER[(state.rotationIndex + 2) % 3]] = {};
+    state.progress[finishedDay] = {};
+    state.progress[state.selectedDay] = {};
 
     saveState();
     showToast('Workout Logged. Next Up: Day ' + state.selectedDay);
     renderAll();
+    window.scrollTo(0, 0);
     if (session.items.length) queueForSync([session]);
   }
 
