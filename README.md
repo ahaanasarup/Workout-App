@@ -14,6 +14,12 @@ iOS won't run the page properly if you open the HTML file straight from the File
 
 It then opens full-screen with its own icon, like a native app. Home Screen web apps keep their own storage, separate from Safari's.
 
+## Analysis
+
+The **Analysis** button shows insights from the workouts logged so far: new bests, your biggest gain, exercises that have stalled, how often you train, and how hard (average RPE). It also shows strength progress for each exercise with a suggestion on when to add weight, cardio totals and pace, and the exercises you skip most. It's all worked out on the phone; nothing is sent anywhere.
+
+Strength progress compares estimated one-rep max (weight × (1 + reps ÷ 30)), so both heavier weight and more reps count. The suggestion to add weight appears once every target set hits the target reps at RPE 8 or lower.
+
 ## Backups
 
 Your data lives on that one phone. Use **Export CSV** now and then, which opens the iOS share sheet so you can save the file to Files or iCloud. Your data is lost if you delete the Home Screen app.

@@ -290,7 +290,47 @@
     cursor: pointer;
   }
   .tool-btn:active { transform: scale(0.99); }
-  .tool-btn[hidden], #historyView[hidden], #mainView[hidden] { display: none; }
+  .tool-btn[hidden], #historyView[hidden], #mainView[hidden], #analysisView[hidden] { display: none; }
+  .analysis-btn { width: 100%; margin-top: 8px; }
+
+  .an-section { font-size: 12px; color: var(--text-dim); margin: 22px 0 10px; }
+  .an-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .an-tile {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    padding: 12px 14px;
+  }
+  .an-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 28px;
+    line-height: 1.1;
+  }
+  .an-label { font-size: 12px; color: var(--text-dim); }
+  .an-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-m);
+    padding: 4px 14px;
+  }
+  .an-row { padding: 10px 0; border-top: 1px solid var(--line); }
+  .an-row:first-child { border-top: none; }
+  .an-row-head { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+  .an-ex { font-size: 14px; font-weight: 600; }
+  .an-detail { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+  .an-up { color: var(--teal); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .an-down { color: var(--pink); font-size: 13px; font-weight: 600; white-space: nowrap; }
+  .an-flat { color: var(--text-dim); font-size: 13px; white-space: nowrap; }
+  .an-tip { font-size: 12px; color: var(--tape-dim); margin-top: 4px; }
+  .an-weeks { display: flex; align-items: flex-end; gap: 6px; height: 96px; padding: 12px 0 0; }
+  .an-week { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; }
+  .an-bar { width: 100%; background: var(--teal); border-radius: 2px 2px 0 0; min-height: 2px; }
+  .an-bar.zero { background: var(--line); }
+  .an-week-n { font-size: 11px; color: var(--text); }
+  .an-week-l { font-size: 10px; color: var(--text-dim); padding-bottom: 8px; }
+  .an-insight { font-size: 14px; line-height: 1.45; padding: 10px 0; border-top: 1px solid var(--line); }
+  .an-insight:first-child { border-top: none; }
   .hist-head { display: flex; gap: 8px; margin-bottom: 16px; }
   .hist-card {
     background: var(--surface);
@@ -335,6 +375,7 @@
     <button class="tool-btn" id="historyBtn">History</button>
     <button class="tool-btn exportBtn">Export CSV</button>
   </div>
+  <button class="tool-btn analysis-btn" id="analysisBtn">Analysis</button>
   <button class="tool-btn sync-btn" id="syncBtn">Google Sheet Sync</button>
   <div class="sync-status" id="syncStatus"></div>
   </div>
@@ -345,6 +386,13 @@
       <button class="tool-btn exportBtn">Export CSV</button>
     </div>
     <div id="histList"></div>
+  </div>
+
+  <div id="analysisView" hidden>
+    <div class="hist-head">
+      <button class="tool-btn" id="analysisBackBtn">&larr; Back</button>
+    </div>
+    <div id="analysisList"></div>
   </div>
 
 </div>
@@ -985,6 +1033,314 @@
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) flushSync(false); });
   renderSyncStatus();
   flushSync(false);
+
+  // ---------- Analysis ----------
+  // Worked out on the phone from the saved logs; nothing is sent anywhere.
+  var analysisView = document.getElementById('analysisView');
+  var analysisList = document.getElementById('analysisList');
+  var DAY_MS = 86400000;
+
+  // Epley estimate of a one-rep max, so sets with different weights and reps can be compared.
+  function e1rm(st){ return st.weight * (1 + (st.reps || 0) / 30); }
+  // Weighted sets compare by estimated max; sets with only reps compare by reps.
+  function setScore(st){ return st.weight ? e1rm(st) : (st.reps || 0); }
+  function bestSet(sets){
+    var best = null;
+    sets.forEach(function(st){ if (!best || setScore(st) > setScore(best)) best = st; });
+    return best;
+  }
+  function fmtLift(st){ return st.weight ? st.weight + ' kg \u00d7 ' + (st.reps || '?') : (st.reps || 0) + ' Reps'; }
+  function round1(n){ return Math.round(n * 10) / 10; }
+  function fmtNum(n){ return Math.round(n).toLocaleString(); }
+  function startOfDay(t){ var d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); }
+  function weekStart(t){
+    var d = new Date(startOfDay(t));
+    d.setDate(d.getDate() - (d.getDay() + 6) % 7); // weeks start on Monday
+    return d.getTime();
+  }
+  function addDays(t, n){ var d = new Date(t); d.setDate(d.getDate() + n); return d.getTime(); }
+  function pctChange(from, to){ return from ? Math.round((to - from) / from * 100) : 0; }
+  function changeEl(pct){
+    if (pct > 0) return el('div', 'an-up', '\u2191 ' + pct + '%');
+    if (pct < 0) return el('div', 'an-down', '\u2193 ' + Math.abs(pct) + '%');
+    return el('div', 'an-flat', 'No Change');
+  }
+
+  // The same exercise can appear on several days under different IDs (e.g. the warm-up), so group by name.
+  function exerciseGroups(type){
+    var groups = [], byName = {};
+    ORDER.forEach(function(k){
+      WORKOUTS[k].exercises.forEach(function(ex){
+        if (ex.type !== type) return;
+        var g = byName[ex.name];
+        if (!g) { g = byName[ex.name] = { name: ex.name, ex: ex, entries: [] }; groups.push(g); }
+        (state.logs[ex.id] || []).forEach(function(e){ g.entries.push(e); });
+      });
+    });
+    groups.forEach(function(g){
+      g.entries.sort(function(a, b){ return new Date(a.date) - new Date(b.date); });
+    });
+    return groups;
+  }
+
+  function strengthStats(){
+    var out = [];
+    exerciseGroups('weight').forEach(function(g){
+      var done = g.entries.filter(function(e){
+        return e.sets && e.sets.some(function(st){ return st.weight || st.reps; });
+      }).map(function(e){
+        var sets = e.sets.filter(function(st){ return st.weight || st.reps; });
+        return { e: e, sets: sets, best: bestSet(sets) };
+      });
+      if (!done.length) return;
+      var first = done[0], latest = done[done.length - 1];
+      var allBest = bestSet(done.map(function(d){ return d.best; }));
+      var prevBest = done.length > 1 ? Math.max.apply(null, done.slice(0, -1).map(function(d){ return setScore(d.best); })) : null;
+      // Stalled: none of the last three sessions beat what came before them.
+      var stalled = false;
+      if (done.length >= 4) {
+        var before = Math.max.apply(null, done.slice(0, -3).map(function(d){ return setScore(d.best); }));
+        stalled = done.slice(-3).every(function(d){ return setScore(d.best) <= before; });
+      }
+      var volume = 0;
+      done.forEach(function(d){ d.sets.forEach(function(st){ volume += (st.weight || 0) * (st.reps || 0); }); });
+      out.push({
+        name: g.name, ex: g.ex, sessions: done.length, first: first, latest: latest, allBest: allBest,
+        change: done.length > 1 ? pctChange(setScore(first.best), setScore(latest.best)) : null,
+        newBest: prevBest !== null && setScore(latest.best) > prevBest,
+        stalled: stalled, volume: volume, tip: progressionTip(g.ex, latest)
+      });
+    });
+    return out;
+  }
+
+  // Double progression: once every target set hits the target reps without grinding, add weight.
+  function progressionTip(ex, latest){
+    var t = latest.e.target || targetOf(ex);
+    var reps = Number(t.reps) || ex.reps, sets = Number(t.sets) || ex.sets;
+    var hitAll = latest.sets.length >= sets && latest.sets.every(function(st){ return (st.reps || 0) >= reps; });
+    var rpes = latest.sets.map(function(st){ return st.rpe; }).filter(Boolean);
+    var maxRpe = rpes.length ? Math.max.apply(null, rpes) : null;
+    if (hitAll && maxRpe !== null && maxRpe <= 8) return 'Ready To Add Weight: Every Set Hit ' + reps + ' Reps At RPE ' + maxRpe + ' Or Lower.';
+    if (hitAll && maxRpe === null) return 'Hit Every Rep Last Time. Try A Little More Weight, Or Log RPE For A Clearer Call.';
+    if (hitAll) return 'Hit Every Rep, But It Was Hard (RPE ' + maxRpe + '). Repeat This Weight Until It Feels Easier.';
+    return 'Stay At This Weight Until All ' + sets + ' Sets Reach ' + reps + ' Reps.';
+  }
+
+  function cardioStats(){
+    var out = [];
+    exerciseGroups('cardio').forEach(function(g){
+      var done = g.entries.filter(function(e){ return e.minutes || e.distance; });
+      if (!done.length) return;
+      var minutes = 0, distance = 0;
+      done.forEach(function(e){ minutes += e.minutes || 0; distance += e.distance || 0; });
+      // Pace (meters per minute) only compares sessions where both were logged.
+      var paced = done.filter(function(e){ return e.minutes && e.distance; });
+      var change = paced.length > 1
+        ? pctChange(paced[0].distance / paced[0].minutes, paced[paced.length - 1].distance / paced[paced.length - 1].minutes)
+        : null;
+      out.push({ name: g.name, sessions: done.length, minutes: minutes, distance: distance, latest: done[done.length - 1], change: change });
+    });
+    return out;
+  }
+
+  function skipStats(){
+    var out = [];
+    ['weight', 'cardio'].forEach(function(type){
+      exerciseGroups(type).forEach(function(g){
+        var skipped = g.entries.filter(function(e){ return e.status === 'skipped'; }).length;
+        if (skipped) out.push({ name: g.name, skipped: skipped, total: g.entries.length });
+      });
+    });
+    return out.sort(function(a, b){ return b.skipped / b.total - a.skipped / a.total; });
+  }
+
+  function renderAnalysis(){
+    analysisList.innerHTML = '';
+    var sessions = buildSessions();
+    if (!sessions.length) {
+      analysisList.appendChild(el('div', 'hist-empty', 'No Workouts Logged Yet. Finish A Workout And Your Analysis Will Show Up Here.'));
+      return;
+    }
+    var now = Date.now();
+    var today = startOfDay(now);
+    var last = sessions[sessions.length - 1];
+    var daysSince = Math.round((today - startOfDay(last.start)) / DAY_MS);
+    var recent = sessions.filter(function(s){ return s.start >= addDays(today, -27); });
+
+    // Weeks in a row with at least one workout. The current week only counts once it has one.
+    var perWeek = {};
+    sessions.forEach(function(s){ var w = weekStart(s.start); perWeek[w] = (perWeek[w] || 0) + 1; });
+    var wk = weekStart(now), streak = 0;
+    if (!perWeek[wk]) wk = addDays(wk, -7);
+    while (perWeek[wk]) { streak++; wk = addDays(wk, -7); }
+
+    var recentRpes = [];
+    recent.forEach(function(s){
+      s.items.forEach(function(it){
+        (it.e.sets || []).forEach(function(st){ if (st.rpe) recentRpes.push(st.rpe); });
+        if (it.e.rpe) recentRpes.push(it.e.rpe);
+      });
+    });
+    var avgRpe = recentRpes.length ? round1(recentRpes.reduce(function(a, b){ return a + b; }, 0) / recentRpes.length) : null;
+
+    var strength = strengthStats();
+    var cardio = cardioStats();
+    var skips = skipStats();
+    var totalVolume = strength.reduce(function(a, s){ return a + s.volume; }, 0);
+    var dayCounts = { A: 0, B: 0, C: 0 };
+    sessions.forEach(function(s){ if (s.day) dayCounts[s.day]++; });
+
+    // Insights
+    var insights = [];
+    if (daysSince >= 5) {
+      insights.push('It\u2019s Been ' + daysSince + ' Days Since Your Last Workout. Next Up Is Day ' + state.selectedDay + ' (' + WORKOUTS[state.selectedDay].title + ').');
+    }
+    // New bests set in the most recent workout, in one line.
+    var lastPrs = strength.filter(function(s){
+      return s.newBest && Math.abs(new Date(s.latest.e.date).getTime() - last.start) < 5000;
+    }).map(function(s){ return s.name + ' (' + fmtLift(s.latest.best) + ')'; });
+    if (lastPrs.length) {
+      insights.push('New Best' + (lastPrs.length > 1 ? 's' : '') + ' In Your Last Workout: ' +
+        (lastPrs.length > 1 ? lastPrs.slice(0, -1).join(', ') + ' And ' + lastPrs[lastPrs.length - 1] : lastPrs[0]) + '.');
+    }
+    var improvers = strength.filter(function(s){ return s.change > 0; }).sort(function(a, b){ return b.change - a.change; });
+    if (improvers.length) {
+      insights.push('Biggest Gain: ' + improvers[0].name + ', Up ' + improvers[0].change + '% Since Your First Session (' +
+        fmtLift(improvers[0].first.best) + ' \u2192 ' + fmtLift(improvers[0].latest.best) + ').');
+    }
+    strength.filter(function(s){ return s.stalled; }).forEach(function(s){
+      insights.push(s.name + ' Hasn\u2019t Improved In 3 Sessions. Try Adding One Rep Per Set, Or A Smaller Weight Jump.');
+    });
+    var counts = ORDER.map(function(k){ return dayCounts[k]; });
+    var maxDay = Math.max.apply(null, counts), minDay = Math.min.apply(null, counts);
+    if (maxDay - minDay >= 2) {
+      var behind = ORDER.filter(function(k){ return dayCounts[k] === minDay; });
+      insights.push('Day ' + behind.join(' And Day ') + ' Has Been Done ' + (maxDay - minDay) + ' Fewer Times Than Your Most Frequent Day.');
+    }
+    if (avgRpe !== null && recentRpes.length >= 5) {
+      if (avgRpe >= 9) insights.push('Your Average Effort Over The Last 4 Weeks Is RPE ' + avgRpe + ', Close To Max. Watch Your Recovery.');
+      else if (avgRpe <= 6.5) insights.push('Your Average Effort Over The Last 4 Weeks Is RPE ' + avgRpe + '. There\u2019s Room To Push A Little Harder.');
+    }
+    skips.filter(function(s){ return s.skipped >= 2 && s.skipped / s.total >= 0.5; }).forEach(function(s){
+      insights.push(s.name + ' Was Skipped In ' + s.skipped + ' Of ' + s.total + ' Workouts.');
+    });
+    if (!insights.length) insights.push('Keep Logging. Insights Show Up As Patterns Appear Over A Few Workouts.');
+
+    analysisList.appendChild(el('div', 'an-section', 'Insights'));
+    var insCard = el('div', 'an-card');
+    insights.forEach(function(t){ insCard.appendChild(el('div', 'an-insight', t)); });
+    analysisList.appendChild(insCard);
+
+    // Overview tiles
+    analysisList.appendChild(el('div', 'an-section', 'Overview'));
+    var tiles = el('div', 'an-tiles');
+    function tile(num, label){
+      var t = el('div', 'an-tile');
+      t.appendChild(el('div', 'an-num', num));
+      t.appendChild(el('div', 'an-label', label));
+      tiles.appendChild(t);
+    }
+    tile(String(sessions.length), 'Workouts Logged');
+    tile(String(round1(recent.length / 4)), 'Per Week (Last 4 Weeks)');
+    tile(daysSince === 0 ? 'Today' : String(daysSince), daysSince === 0 ? 'Last Workout' : (daysSince === 1 ? 'Day Since Last Workout' : 'Days Since Last Workout'));
+    tile(String(streak), streak === 1 ? 'Week In A Row' : 'Weeks In A Row');
+    tile(totalVolume >= 10000 ? round1(totalVolume / 1000) + 'k' : fmtNum(totalVolume), 'Kg Lifted In Total');
+    tile(avgRpe !== null ? String(avgRpe) : '\u2014', 'Average RPE (Last 4 Weeks)');
+    analysisList.appendChild(tiles);
+    analysisList.appendChild(el('div', 'an-detail', ORDER.map(function(k){ return 'Day ' + k + ': ' + dayCounts[k]; }).join('  \u00b7  ')));
+
+    // Last 8 weeks
+    analysisList.appendChild(el('div', 'an-section', 'Workouts Per Week'));
+    var weeksCard = el('div', 'an-card');
+    var weeks = el('div', 'an-weeks');
+    var starts = [];
+    for (var i = 7; i >= 0; i--) starts.push(addDays(weekStart(now), -7 * i));
+    var maxWeek = Math.max.apply(null, starts.map(function(w){ return perWeek[w] || 0; }).concat([3]));
+    starts.forEach(function(w){
+      var n = perWeek[w] || 0;
+      var col = el('div', 'an-week');
+      col.appendChild(el('div', 'an-week-n', String(n)));
+      var bar = el('div', 'an-bar' + (n ? '' : ' zero'));
+      bar.style.height = (n / maxWeek * 50) + 'px';
+      col.appendChild(bar);
+      var d = new Date(w);
+      col.appendChild(el('div', 'an-week-l', (d.getMonth() + 1) + '/' + d.getDate()));
+      weeks.appendChild(col);
+    });
+    weeksCard.appendChild(weeks);
+    analysisList.appendChild(weeksCard);
+
+    // Strength
+    if (strength.length) {
+      analysisList.appendChild(el('div', 'an-section', 'Strength Progress (Best Set, First vs. Latest)'));
+      var sCard = el('div', 'an-card');
+      strength.forEach(function(s){
+        var row = el('div', 'an-row');
+        var head = el('div', 'an-row-head');
+        head.appendChild(el('div', 'an-ex', s.name));
+        head.appendChild(s.change === null ? el('div', 'an-flat', '1 Session') : changeEl(s.change));
+        row.appendChild(head);
+        row.appendChild(el('div', 'an-detail',
+          'Latest: ' + fmtLift(s.latest.best) + '  \u00b7  Best: ' + fmtLift(s.allBest) + '  \u00b7  ' +
+          s.sessions + (s.sessions === 1 ? ' Session' : ' Sessions')));
+        row.appendChild(el('div', 'an-tip', s.tip));
+        sCard.appendChild(row);
+      });
+      analysisList.appendChild(sCard);
+      analysisList.appendChild(el('div', 'notes', 'Change Compares Estimated One-Rep Max (Weight \u00d7 (1 + Reps \u00f7 30)), So Heavier Weight And More Reps Both Count.'));
+    }
+
+    // Cardio
+    if (cardio.length) {
+      analysisList.appendChild(el('div', 'an-section', 'Cardio'));
+      var cCard = el('div', 'an-card');
+      cardio.forEach(function(c){
+        var row = el('div', 'an-row');
+        var head = el('div', 'an-row-head');
+        head.appendChild(el('div', 'an-ex', c.name));
+        if (c.change !== null) head.appendChild(changeEl(c.change));
+        row.appendChild(head);
+        var parts = [c.sessions + (c.sessions === 1 ? ' Session' : ' Sessions')];
+        if (c.minutes) parts.push(fmtNum(c.minutes) + ' Min Total');
+        if (c.distance) parts.push(fmtNum(c.distance) + ' m Total');
+        row.appendChild(el('div', 'an-detail', parts.join('  \u00b7  ')));
+        row.appendChild(el('div', 'an-detail', 'Latest: ' + fmtCardio(c.latest)));
+        cCard.appendChild(row);
+      });
+      analysisList.appendChild(cCard);
+      if (cardio.some(function(c){ return c.change !== null; })) {
+        analysisList.appendChild(el('div', 'notes', 'Change Compares Pace (Meters Per Minute), First vs. Latest.'));
+      }
+    }
+
+    // Skipped
+    if (skips.length) {
+      analysisList.appendChild(el('div', 'an-section', 'Most Skipped'));
+      var kCard = el('div', 'an-card');
+      skips.slice(0, 5).forEach(function(s){
+        var row = el('div', 'an-row');
+        var head = el('div', 'an-row-head');
+        head.appendChild(el('div', 'an-ex', s.name));
+        head.appendChild(el('div', 'an-flat', s.skipped + ' Of ' + s.total));
+        row.appendChild(head);
+        kCard.appendChild(row);
+      });
+      analysisList.appendChild(kCard);
+    }
+  }
+
+  document.getElementById('analysisBtn').onclick = function(){
+    mainView.hidden = true;
+    analysisView.hidden = false;
+    renderAnalysis();
+    window.scrollTo(0, 0);
+  };
+  document.getElementById('analysisBackBtn').onclick = function(){
+    analysisView.hidden = true;
+    mainView.hidden = false;
+    window.scrollTo(0, 0);
+  };
 
   document.getElementById('historyBtn').onclick = function(){
     mainView.hidden = true;
