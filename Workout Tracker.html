@@ -1031,6 +1031,24 @@
     }
   };
 
+  // One-time offer to delete the test workouts logged while trying the app out. It asks once,
+  // before anything waiting is synced, and then never again whatever the answer.
+  var WIPE_KEY = 'workoutTrackerTestWipe_v1';
+  var wipeAsked = true;
+  try { wipeAsked = !!localStorage.getItem(WIPE_KEY); } catch(e){}
+  if (!wipeAsked) {
+    try { localStorage.setItem(WIPE_KEY, new Date().toISOString()); } catch(e){}
+    if (confirm('Delete All Workout History? This Clears Every Logged Workout, The Workout Count And Today\'s Entries So You Can Start Fresh. It Can\'t Be Undone. You\'ll Only Be Asked Once.')) {
+      state.logs = {};
+      state.progress = {};
+      state.completedCount = 0;
+      saveState();
+      sync.queue = [];
+      saveSync();
+      showToast('Workout History Deleted');
+    }
+  }
+
   window.addEventListener('online', function(){ flushSync(true); });
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) flushSync(false); });
   renderSyncStatus();
