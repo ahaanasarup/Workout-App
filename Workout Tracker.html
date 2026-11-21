@@ -595,7 +595,7 @@
       var sub = document.createElement('div');
       sub.className = 'ex-sub';
       if (ex.type === 'cardio') {
-        var expected = ex.minutes ? ex.minutes + ' Min Expected' : '';
+        var expected = ex.minutes ? ex.minutes + ' Min' : '';
         var logged = prog[ex.id] && prog[ex.id].minutes ? prog[ex.id].minutes + ' Min Logged' : 'Tap To Log Time';
         sub.textContent = expected ? expected + ' · ' + logged : logged;
       } else {
