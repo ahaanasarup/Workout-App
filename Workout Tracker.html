@@ -594,9 +594,13 @@
       name.textContent = ex.name;
       var sub = document.createElement('div');
       sub.className = 'ex-sub';
-      sub.textContent = ex.type === 'cardio'
-        ? (prog[ex.id] && prog[ex.id].minutes ? prog[ex.id].minutes + ' Min Logged' : 'Tap To Log Time')
-        : (ex.sets + ' Sets × ' + ex.reps + ' Reps');
+      if (ex.type === 'cardio') {
+        var expected = ex.minutes ? ex.minutes + ' Min Expected' : '';
+        var logged = prog[ex.id] && prog[ex.id].minutes ? prog[ex.id].minutes + ' Min Logged' : 'Tap To Log Time';
+        sub.textContent = expected ? expected + ' · ' + logged : logged;
+      } else {
+        sub.textContent = ex.sets + ' Sets × ' + ex.reps + ' Reps';
+      }
       nameWrap.appendChild(name);
       nameWrap.appendChild(sub);
 
